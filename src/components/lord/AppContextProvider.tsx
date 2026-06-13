@@ -1,5 +1,6 @@
 import type React from "react";
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { useLocation } from "@tanstack/react-router";
 import { monitoring } from "@/lib/monitoring-service";
 
 export interface AppContextType {
@@ -19,6 +20,7 @@ export interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppContextProvider({ children }: { children: ReactNode }) {
+  const location = useLocation();
   const [metrics, setMetrics] = useState({
     latency: 0,
     uptime: 0,
@@ -27,20 +29,21 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     authStatus: "online",
     errorCount: 0,
   });
-  const [currentRoute, setCurrentRoute] = useState("/");
+  const currentRoute = location.pathname;
   const [activeWorkflow, setActiveWorkflow] = useState<string | null>(null);
   const [history, setHistory] = useState<Array<{ timestamp: number; action: string; data?: unknown }>>([]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const health = monitoring.getHealthStatus();
-      setMetrics((prev) => ({
-        ...prev,
-        uptime: Math.floor(performance.now() / 1000),
-        apiStatus: health === "healthy" ? "online" : health === "warning" ? "degraded" : "offline",
-      }));
-    }, 1000);
-    return () => clearInterval(interval);
+    return monitoring.subscribe((next) => {
+      setMetrics({
+        latency: next.latency,
+        uptime: next.uptime,
+        apiStatus: next.apiStatus,
+        dbStatus: next.dbStatus,
+        authStatus: next.authStatus,
+        errorCount: next.errorCount,
+      });
+    });
   }, []);
 
   const value: AppContextType = {

@@ -7,6 +7,7 @@ import { monitoring } from "./monitoring-service";
 
 export function setupApiInterceptor() {
   if (typeof window === "undefined") return;
+  if (Reflect.get(window, "__lordFetchInstrumented")) return;
 
   const originalFetch = window.fetch;
 
@@ -58,4 +59,5 @@ export function setupApiInterceptor() {
       throw error;
     }
   };
+  Reflect.set(window, "__lordFetchInstrumented", true);
 }

@@ -22,7 +22,7 @@ export interface AppEvent {
   type: "error" | "warning" | "info" | "action" | "navigation" | "api";
   category: string;
   message: string;
-  metadata?: any;
+  metadata?: unknown;
 }
 
 class MonitoringService {
@@ -78,7 +78,7 @@ class MonitoringService {
   public logEvent(event: Omit<AppEvent, "id" | "timestamp">) {
     const newEvent: AppEvent = {
       ...event,
-      id: Math.random().toString(36).substr(2, 9),
+      id: crypto.randomUUID(),
       timestamp: Date.now(),
     };
 
@@ -102,10 +102,13 @@ class MonitoringService {
     this.notify();
   }
 
-  public updateStatus(type: "api" | "db" | "auth", status: any) {
+  public updateStatus(
+    type: "api" | "db" | "auth",
+    status: "online" | "degraded" | "offline",
+  ) {
     if (type === "api") this.metrics.apiStatus = status;
     if (type === "db") this.metrics.dbStatus = status;
-    if (type === "auth") this.metrics.authStatus = status;
+    if (type === "auth") this.metrics.authStatus = status === "degraded" ? "offline" : status;
     this.updateHealthScore();
     this.notify();
   }
@@ -136,12 +139,12 @@ class MonitoringService {
 
   public subscribe(listener: (metrics: SystemMetrics, events: AppEvent[]) => void) {
     this.listeners.add(listener);
-    listener(this.metrics, this.events);
+    listener({ ...this.metrics }, [...this.events]);
     return () => this.listeners.delete(listener);
   }
 
   private notify() {
-    this.listeners.forEach((l) => l(this.metrics, this.events));
+    this.listeners.forEach((l) => l({ ...this.metrics }, [...this.events]));
   }
 }
 

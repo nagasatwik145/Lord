@@ -10,7 +10,5 @@ export default defineConfig({
       },
     },
   },
-  vite: {
-    base: "./",
-  },
+  vite: { base: "/" },
 });
