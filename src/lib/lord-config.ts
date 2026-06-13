@@ -1,11 +1,11 @@
 /** Client-safe LORD constants (no server-only imports). */
 
 export const LORD_MODELS = {
-  fast: "google/gemini-2.5-flash-lite",
-  balanced: "google/gemini-2.5-flash-lite",
-  reasoning: "google/gemini-2.5-flash",
-  coding: "deepseek/deepseek-chat-v3-0324:free",
-  creative: "deepseek/deepseek-chat-v3-0324:free",
+  fast: "google/gemini-3.1-flash-lite-preview",
+  balanced: "google/gemini-3-flash-preview",
+  reasoning: "google/gemini-3.1-pro-preview",
+  coding: "google/gemini-3.5-flash",
+  creative: "google/gemini-2.5-pro",
 } as const;
 
 export type LordMode = keyof typeof LORD_MODELS;

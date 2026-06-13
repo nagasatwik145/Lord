@@ -1,30 +1,45 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
+import { z } from "zod";
 import {
-  createOpenRouterProvider,
+  createLovableAiGatewayProvider,
   LORD_MODELS,
   LORD_SYSTEM_PROMPT,
   type LordMode,
 } from "@/lib/ai-gateway.server";
+import { apiErrorResponse, getSafeErrorMessage } from "@/lib/api-error";
+
+const ChatRequestSchema = z.object({
+  messages: z.array(z.object({ role: z.enum(["user", "assistant", "system"]), parts: z.array(z.unknown()).max(100) }).passthrough()).min(1).max(100),
+  mode: z.enum(["fast", "balanced", "reasoning", "coding", "creative"]).optional(),
+  context: z.object({ page: z.string().max(200).optional(), workflow: z.string().max(200).nullable().optional() }).passthrough().optional(),
+});
 
 export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = process.env.OPENROUTER_API_KEY;
+        const requestId = crypto.randomUUID();
+        const apiKey = process.env.LOVABLE_API_KEY;
         if (!apiKey) {
-          return new Response("Missing OPENROUTER_API_KEY", { status: 500 });
+          console.error(`[chat:${requestId}] Lovable AI is not configured`);
+          return apiErrorResponse(503, "AI_NOT_CONFIGURED", "AI is temporarily unavailable.", requestId);
         }
 
-        const body = (await request.json()) as {
-          messages: UIMessage[];
-          mode?: LordMode;
-          context?: any;
-          conversationId?: string;
-        };
-        const mode: LordMode = body.mode && body.mode in LORD_MODELS ? body.mode : "balanced";
+        let rawBody: unknown;
+        try {
+          rawBody = await request.json();
+        } catch {
+          return apiErrorResponse(400, "INVALID_REQUEST", "Request body must be valid JSON.", requestId);
+        }
+        const parsed = ChatRequestSchema.safeParse(rawBody);
+        if (!parsed.success) {
+          console.warn(`[chat:${requestId}] Invalid request`, parsed.error.flatten());
+          return apiErrorResponse(400, "INVALID_REQUEST", "Please send a valid conversation with 1–100 messages.", requestId);
+        }
+        const body = parsed.data;
+        const mode: LordMode = body.mode ?? "balanced";
         const modelId = LORD_MODELS[mode];
-        const conversationId = body.conversationId;
 
         // Construct enriched system prompt with application context
         let systemPrompt = LORD_SYSTEM_PROMPT;
@@ -33,49 +48,21 @@ export const Route = createFileRoute("/api/chat")({
         }
 
         try {
-          const { addMessage, createConversation, updateConversationTitle } = await import("@/lib/db/queries");
-          
-          // Save user message if conversationId exists
-          if (conversationId) {
-            const lastUserMessage = body.messages[body.messages.length - 1];
-            if (lastUserMessage && lastUserMessage.role === "user") {
-              const content = lastUserMessage.parts.map(p => p.type === "text" ? p.text : "").join("");
-              
-              // Ensure conversation exists
-              try {
-                await createConversation(conversationId, "New Conversation");
-              } catch (e) {
-                // Ignore if already exists
-              }
-              
-              await addMessage(conversationId, "user", content);
-              
-              // If it's the first message, update title
-              if (body.messages.length === 1) {
-                const title = content.slice(0, 40) + (content.length > 40 ? "..." : "");
-                await updateConversationTitle(conversationId, title);
-              }
-            }
-          }
-
-          const gateway = createOpenRouterProvider(apiKey);
+          const gateway = createLovableAiGatewayProvider(apiKey);
           const result = streamText({
             model: gateway(modelId),
             system: systemPrompt,
-            messages: await convertToModelMessages(body.messages),
-            onFinish: async ({ text }) => {
-              if (conversationId) {
-                await addMessage(conversationId, "assistant", text, modelId);
-              }
-            }
+            messages: await convertToModelMessages(body.messages as UIMessage[]),
+            onError: ({ error }) => console.error(`[chat:${requestId}] Stream failed`, error),
           });
           return result.toUIMessageStreamResponse();
         } catch (err) {
-          const msg = err instanceof Error ? err.message : "Unknown error";
-          return new Response(JSON.stringify({ error: msg }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          });
+          const detail = getSafeErrorMessage(err);
+          console.error(`[chat:${requestId}] Request failed: ${detail}`, err);
+          const lower = detail.toLowerCase();
+          if (lower.includes("credit") || lower.includes("payment required")) return apiErrorResponse(402, "AI_CREDITS_EXHAUSTED", "AI credits are exhausted. Add workspace credits and try again.", requestId);
+          if (lower.includes("rate limit") || lower.includes("too many requests")) return apiErrorResponse(429, "AI_RATE_LIMITED", "AI is receiving too many requests. Please retry shortly.", requestId);
+          return apiErrorResponse(502, "AI_UPSTREAM_ERROR", "The AI provider could not complete this request. Please retry.", requestId);
         }
       },
     },
