@@ -176,7 +176,11 @@ function ChatPage() {
           </div>
 
           {/* Messages */}
-          <div ref={scrollerRef} aria-live="polite" className="flex-1 overflow-y-auto rounded-xl hud-panel p-4 md:p-6">
+          <div
+            ref={scrollerRef}
+            aria-live="polite"
+            className="flex-1 overflow-y-auto rounded-xl hud-panel p-4 md:p-6"
+          >
             {messages.length === 0 ? (
               <EmptyState />
             ) : (
@@ -198,7 +202,9 @@ function ChatPage() {
                           : "bg-background/40 border border-border/60 text-foreground",
                       )}
                     >
-                      {m.parts.map((p, i) => p.type === "text" ? <span key={i}>{p.text}</span> : null)}
+                      {m.parts.map((p, i) =>
+                        p.type === "text" ? <span key={i}>{p.text}</span> : null,
+                      )}
                     </div>
                   </li>
                 ))}
