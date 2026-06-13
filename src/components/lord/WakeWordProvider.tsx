@@ -28,12 +28,13 @@ interface WakeWordContextValue {
 const WakeWordContext = createContext<WakeWordContextValue | undefined>(undefined);
 
 export function WakeWordProvider({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [status, setStatus] = useState<WakeStatus>("off");
   const [transcript, setTranscript] = useState("");
   const [reply, setReply] = useState("");
   const engineRef = useRef<WakeEngine | null>(null);
-  const supported = typeof window !== "undefined" && Boolean(navigator.mediaDevices?.getUserMedia);
+  const supported = mounted && Boolean(navigator.mediaDevices?.getUserMedia);
 
   const stop = useCallback(async () => {
     await engineRef.current?.stop();
@@ -73,12 +74,12 @@ export function WakeWordProvider({ children }: { children: ReactNode }) {
     void (enabled ? stop() : start());
   }, [enabled, start, stop]);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    setMounted(true);
+    return () => {
       void engineRef.current?.stop();
-    },
-    [],
-  );
+    };
+  }, []);
 
   return (
     <WakeWordContext.Provider value={{ enabled, status, transcript, reply, supported, toggle }}>

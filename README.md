@@ -5,7 +5,7 @@ LORD is an advanced, autonomous AI application designed to function as the centr
 ## 🚀 Key Features
 
 - **Autonomous AI Mission**: LORD is programmed to manage, monitor, and optimize the entire application.
-- **Persistent Chat History**: Conversations are saved and restored using SQLite and Drizzle ORM.
+- **Persistent Chat History**: Conversations are saved locally for a fast, private single-operator experience.
 - **Real-Time Monitoring**: Integrated health tracking with the `HealthHud` component, monitoring API, DB, and Auth status.
 - **Voice Interface**: Wake-word activation ("Hey Lord") with text-to-speech and speech-to-text capabilities.
 - **Application Awareness**: LORD understands current route, metrics, and history to provide contextual assistance.
@@ -15,16 +15,15 @@ LORD is an advanced, autonomous AI application designed to function as the centr
 - **Frontend**: Vite + React + Tailwind CSS
 - **Routing**: TanStack Router
 - **State Management**: TanStack Start + Context API
-- **AI Integration**: AI SDK (OpenRouter)
-- **Database**: SQLite + Drizzle ORM
+- **AI Integration**: AI SDK through Lovable AI
+- **Backend**: Lovable Cloud for managed services; browser storage for personal workspace data
 - **Voice**: OpenWakeWord + Web Speech API
 
 ## 📦 Getting Started
 
 ### Prerequisites
 
-- Node.js (v18+)
-- npm or pnpm
+- Bun 1.3+
 
 ### Installation
 
@@ -38,33 +37,21 @@ LORD is an advanced, autonomous AI application designed to function as the centr
 2. Install dependencies:
 
    ```bash
-   npm install
+   bun install
    ```
 
-3. Configure environment variables:
-   Create a `.env` file in the root directory:
-
-   ```env
-   OPENROUTER_API_KEY=your_api_key
-   ```
-
-4. Setup the database:
-
+3. Start the development server:
    ```bash
-   npx drizzle-kit push
+   bun run dev
    ```
 
-5. Start the development server:
-   ```bash
-   npm run dev
-   ```
+Lovable AI and Lovable Cloud credentials are provisioned securely by the platform; do not add private API keys to source files.
 
 ## 📂 Project Structure
 
 - `src/components/lord`: Core LORD UI components (AppShell, HealthHud, ChatSidebar).
-- `src/lib/db`: Database schema and queries.
 - `src/lib/monitoring-service.ts`: Global application health monitoring.
-- `src/routes/api/chat.ts`: Intelligent chat backend with persistence.
+- `src/routes/api/chat.ts`: Validated streaming AI backend.
 - `src/routes/chat.tsx`: Main chat interface with history management.
 
 ## 📜 License
