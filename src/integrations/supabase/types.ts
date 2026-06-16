@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          last_message_at: string
           title: string
           updated_at: string
           user_id: string
@@ -25,6 +26,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          last_message_at?: string
           title: string
           updated_at?: string
           user_id: string
@@ -32,6 +34,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          last_message_at?: string
           title?: string
           updated_at?: string
           user_id?: string
@@ -105,6 +108,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          id: string
+          last_active_at: string
+          name: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          id: string
+          last_active_at?: string
+          name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_active_at?: string
+          name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          auto_speak: boolean
+          created_at: string
+          default_mode: string
+          notifications_enabled: boolean
+          theme: string
+          updated_at: string
+          user_id: string
+          voice_rate: number
+        }
+        Insert: {
+          auto_speak?: boolean
+          created_at?: string
+          default_mode?: string
+          notifications_enabled?: boolean
+          theme?: string
+          updated_at?: string
+          user_id: string
+          voice_rate?: number
+        }
+        Update: {
+          auto_speak?: boolean
+          created_at?: string
+          default_mode?: string
+          notifications_enabled?: boolean
+          theme?: string
+          updated_at?: string
+          user_id?: string
+          voice_rate?: number
+        }
+        Relationships: []
       }
     }
     Views: {
