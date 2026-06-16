@@ -7,7 +7,7 @@ import { usePersistedState } from "@/lib/use-persisted-state";
 import { uid, type Task, type Goal } from "@/lib/lord-store";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/productivity")({
+export const Route = createFileRoute("/_authenticated/productivity")({
   head: () => ({ meta: [{ title: "LORD — Productivity" }] }),
   component: ProductivityPage,
 });

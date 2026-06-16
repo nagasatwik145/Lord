@@ -22,7 +22,7 @@ import { AppShell } from "@/components/lord/AppShell";
 import { getApiBaseUrl } from "@/lib/api-config";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/study")({
+export const Route = createFileRoute("/_authenticated/study")({
   head: () => ({ meta: [{ title: "LORD — Study Command Center" }] }),
   component: StudyPage,
 });

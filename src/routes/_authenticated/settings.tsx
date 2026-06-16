@@ -5,7 +5,7 @@ import { usePersistedState } from "@/lib/use-persisted-state";
 import { LORD_MODELS } from "@/lib/lord-config";
 import { Trash2 } from "lucide-react";
 
-export const Route = createFileRoute("/settings")({
+export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "LORD — Settings" }] }),
   component: SettingsPage,
 });

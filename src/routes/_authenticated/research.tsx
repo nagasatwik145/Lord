@@ -5,7 +5,7 @@ import { AppShell } from "@/components/lord/AppShell";
 import { HudPanel } from "@/components/lord/HudPanel";
 import { getApiBaseUrl } from "@/lib/api-config";
 
-export const Route = createFileRoute("/research")({
+export const Route = createFileRoute("/_authenticated/research")({
   head: () => ({ meta: [{ title: "LORD — Research" }] }),
   component: ResearchPage,
 });
