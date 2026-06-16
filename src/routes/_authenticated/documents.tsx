@@ -5,7 +5,7 @@ import { AppShell } from "@/components/lord/AppShell";
 import { HudPanel } from "@/components/lord/HudPanel";
 import { getApiBaseUrl } from "@/lib/api-config";
 
-export const Route = createFileRoute("/documents")({
+export const Route = createFileRoute("/_authenticated/documents")({
   head: () => ({ meta: [{ title: "LORD — Document Intelligence" }] }),
   component: DocsPage,
 });

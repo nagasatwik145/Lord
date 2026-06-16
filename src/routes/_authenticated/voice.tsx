@@ -6,7 +6,7 @@ import { HudRings } from "@/components/lord/HudRings";
 import { useWakeWord } from "@/components/lord/WakeWordProvider";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/voice")({
+export const Route = createFileRoute("/_authenticated/voice")({
   head: () => ({ meta: [{ title: "LORD — Voice" }] }),
   component: VoicePage,
 });

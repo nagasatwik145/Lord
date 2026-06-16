@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/lord/AppShell";
 import { HudPanel } from "@/components/lord/HudPanel";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, Lock, User as UserIcon } from "lucide-react";
+
+type Mode = "signin" | "signup" | "forgot";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -13,9 +15,10 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -23,7 +26,7 @@ function AuthPage() {
   useEffect(() => {
     let mounted = true;
     supabase.auth.getUser().then(({ data }) => {
-      if (mounted && data.user) navigate({ to: "/memory" });
+      if (mounted && data.user) navigate({ to: "/chat" });
     });
     return () => {
       mounted = false;
@@ -40,15 +43,24 @@ function AuthPage() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/memory` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/chat`,
+            data: { name: name.trim() || email.split("@")[0] },
+          },
         });
         if (error) throw error;
-        setInfo("Account created. You can sign in now.");
+        setInfo("Account created. Check your inbox to confirm, then sign in.");
         setMode("signin");
+      } else if (mode === "forgot") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        setInfo("Password reset email sent. Check your inbox.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: "/memory" });
+        navigate({ to: "/chat" });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Authentication failed");
@@ -57,45 +69,56 @@ function AuthPage() {
     }
   };
 
+  const titles: Record<Mode, { h: string; sub: string; btn: string }> = {
+    signin: { h: "Access LORD", sub: "Sign in to continue.", btn: "Sign In" },
+    signup: { h: "Create Identity", sub: "Register a new operator.", btn: "Create Account" },
+    forgot: { h: "Reset Access", sub: "We'll email you a reset link.", btn: "Send Reset Link" },
+  };
+  const t = titles[mode];
+
   return (
     <AppShell>
       <div className="mx-auto max-w-md">
         <h1 className="mb-1 font-display text-3xl tracking-wide gradient-text text-glow">
-          {mode === "signin" ? "Access LORD" : "Create Identity"}
+          {t.h}
         </h1>
-        <p className="mb-6 text-sm text-muted-foreground">
-          {mode === "signin"
-            ? "Sign in to unlock your memory vault."
-            : "Register to persist your memories securely."}
-        </p>
+        <p className="mb-6 text-sm text-muted-foreground">{t.sub}</p>
 
-        <HudPanel title={mode === "signin" ? "Sign In" : "Sign Up"}>
+        <HudPanel title={t.btn}>
           <form onSubmit={submit} className="space-y-3">
-            <div>
-              <label className="mb-1 block text-xs uppercase tracking-wider text-muted-foreground">
-                Email
-              </label>
+            {mode === "signup" && (
+              <Field icon={UserIcon} label="Name">
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name"
+                  className="w-full bg-transparent text-sm outline-none"
+                />
+              </Field>
+            )}
+            <Field icon={Mail} label="Email">
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-md border border-border/60 bg-background/40 px-3 py-2 text-sm outline-none focus:border-primary"
+                placeholder="you@domain.com"
+                className="w-full bg-transparent text-sm outline-none"
               />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs uppercase tracking-wider text-muted-foreground">
-                Password
-              </label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-md border border-border/60 bg-background/40 px-3 py-2 text-sm outline-none focus:border-primary"
-              />
-            </div>
+            </Field>
+            {mode !== "forgot" && (
+              <Field icon={Lock} label="Password">
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-transparent text-sm outline-none"
+                />
+              </Field>
+            )}
 
             {error && (
               <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
@@ -111,25 +134,52 @@ function AuthPage() {
             <button
               type="submit"
               disabled={busy}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_0_18px_var(--hud)] disabled:opacity-60"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-[0_0_18px_var(--hud)] transition hover:scale-[1.01] disabled:opacity-60"
             >
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-              {mode === "signin" ? "Sign In" : "Create Account"}
+              {t.btn}
             </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                setMode(mode === "signin" ? "signup" : "signin");
-                setError(null);
-                setInfo(null);
-              }}
-              className="block w-full text-center text-xs text-muted-foreground hover:text-primary"
-            >
-              {mode === "signin"
-                ? "Need an account? Sign up"
-                : "Already have an account? Sign in"}
-            </button>
+            <div className="flex items-center justify-between text-xs">
+              {mode === "signin" ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("forgot");
+                      setError(null);
+                      setInfo(null);
+                    }}
+                    className="text-muted-foreground hover:text-primary"
+                  >
+                    Forgot password?
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("signup");
+                      setError(null);
+                      setInfo(null);
+                    }}
+                    className="text-muted-foreground hover:text-primary"
+                  >
+                    Create account →
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("signin");
+                    setError(null);
+                    setInfo(null);
+                  }}
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  ← Back to sign in
+                </button>
+              )}
+            </div>
           </form>
         </HudPanel>
 
@@ -140,5 +190,27 @@ function AuthPage() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+function Field({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+        {label}
+      </span>
+      <div className="flex items-center gap-2 rounded-md border border-border/60 bg-background/40 px-3 py-2 focus-within:border-primary">
+        <Icon className="h-4 w-4 text-muted-foreground" />
+        {children}
+      </div>
+    </label>
   );
 }
